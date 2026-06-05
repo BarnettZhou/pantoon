@@ -5,7 +5,7 @@ const path = require('path');
 const os = require('os');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH } = require('./core/paths');
+const { CONFIG_PATH, getLocalIPs } = require('./core/paths');
 
 function run(script, sync = false, args = []) {
   const scriptPath = path.join(__dirname, 'core', script);
@@ -55,6 +55,12 @@ switch (cmd) {
     if (withServer) {
       console.log('\n🚀 启动代理 + 控制台...\n');
       run('server.js', false); // 后台启动控制台
+      const ips = getLocalIPs();
+      const PORT = 11451;
+      console.log('🖥️  控制台访问地址:');
+      console.log(`   http://localhost:${PORT}/console`);
+      ips.forEach(ip => console.log(`   http://${ip}:${PORT}/console`));
+      console.log();
       run('proxy.js', true);   // 前台启动代理
     } else {
       console.log('\n🚀 启动代理...\n');

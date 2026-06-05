@@ -2,10 +2,29 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, ensureConfig, getPortPid } = require('./paths');
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid } = require('./paths');
+
+function isProcessAlive(pidPath) {
+  if (!fs.existsSync(pidPath)) return false;
+  const pid = fs.readFileSync(pidPath, 'utf8').trim();
+  if (!pid) return false;
+  try {
+    process.kill(parseInt(pid, 10), 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 function main() {
   ensureConfig();
+
+  const proxyRunning = isProcessAlive(PID_PATH);
+  const serverRunning = isProcessAlive(SERVER_PID_PATH);
+
+  console.log('\n Pantoon 服务状态');
+  console.log(`   代理进程 : ${proxyRunning ? '运行中 ✅' : '未运行 ❌'}`);
+  console.log(`   控制台进程: ${serverRunning ? '运行中 ✅' : '未运行 ❌'}`);
 
   let config;
   try {
