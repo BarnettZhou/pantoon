@@ -11,7 +11,7 @@ function run(script, sync = false, args = []) {
   if (sync) {
     return spawnSync('node', [scriptPath, ...args], { stdio: 'inherit', shell: true });
   } else {
-    return spawn('node', [scriptPath, ...args], { stdio: 'inherit', shell: true });
+    return spawn('node', [scriptPath, ...args], { stdio: 'ignore', shell: true, windowsHide: true });
   }
 }
 

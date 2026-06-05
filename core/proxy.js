@@ -199,7 +199,12 @@ function main() {
     return;
   }
 
-  console.log(`\n🚀 批量跳板代理启动中...\n`);
+  console.log('\n========================================');
+  console.log('  Pantoon 代理进程运行中');
+  console.log('  请勿关闭此窗口，否则代理将停止');
+  console.log('========================================\n');
+
+  console.log(`🚀 批量跳板代理启动中...\n`);
 
   const ips = getLocalIPs();
   if (ips.length > 0) {

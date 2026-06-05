@@ -385,7 +385,7 @@ function handleRequest(req, res) {
     try {
       const pantoonPath = path.join(__dirname, '..', 'pantoon.js');
       spawnSync('node', [pantoonPath, 'stop']);
-      const child = spawn('node', [pantoonPath, 'start'], { detached: true, stdio: 'ignore' });
+      const child = spawn('node', [pantoonPath, 'start'], { detached: true, stdio: 'ignore', windowsHide: true });
       child.unref();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true }));
