@@ -1,28 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, ensureConfig } = require('./paths');
-
-function getPortPid(port) {
-  try {
-    const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
-    const lines = output.trim().split('\n');
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 5 && parts[3] === 'LISTENING') {
-        const localAddr = parts[1];
-        if (localAddr.endsWith(`:${port}`)) {
-          return parts[4];
-        }
-      }
-    }
-  } catch (e) {
-    // port not found
-  }
-  return null;
-}
+const { CONFIG_PATH, ensureConfig, getPortPid } = require('./paths');
 
 function main() {
   ensureConfig();

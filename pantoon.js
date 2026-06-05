@@ -2,6 +2,7 @@
 const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const yaml = require('js-yaml');
 
 const { CONFIG_PATH } = require('./core/paths');
@@ -23,11 +24,19 @@ function isRunning() {
     for (const rule of proxies) {
       const port = rule.listen || rule.port;
       try {
-        const result = spawnSync('cmd', ['/c', `netstat -ano | findstr :${port}`], {
-          encoding: 'utf8',
-          shell: true,
-        });
-        if (result.stdout && result.stdout.includes('LISTENING')) return true;
+        const isWin = os.platform() === 'win32';
+        let listening;
+        if (isWin) {
+          const result = spawnSync('cmd', ['/c', `netstat -ano | findstr :${port}`], {
+            encoding: 'utf8',
+            shell: true,
+          });
+          listening = result.stdout && result.stdout.includes('LISTENING');
+        } else {
+          const result = spawnSync('lsof', ['-i', `:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
+          listening = result.stdout && result.stdout.trim().length > 0;
+        }
+        if (listening) return true;
       } catch (e) {}
     }
   } catch (e) {}

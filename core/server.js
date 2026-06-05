@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 const yaml = require('js-yaml');
-const { CONFIG_PATH, SERVER_PID_PATH, ensureConfig } = require('./paths');
+const { CONFIG_PATH, SERVER_PID_PATH, ensureConfig, isPortListening } = require('./paths');
 
 const PORT = 11451;
 
@@ -221,15 +221,6 @@ loadData();
 </script>
 </body>
 </html>`;
-
-function isPortListening(port) {
-  try {
-    const out = spawnSync('cmd', ['/c', `netstat -ano | findstr :${port}`], { encoding: 'utf8', shell: true }).stdout;
-    return out && out.includes('LISTENING');
-  } catch (e) {
-    return false;
-  }
-}
 
 function readConfig() {
   ensureConfig();

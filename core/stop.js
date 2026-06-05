@@ -1,28 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig } = require('./paths');
-
-function getPortPid(port) {
-  try {
-    const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
-    const lines = output.trim().split('\n');
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 5 && parts[3] === 'LISTENING') {
-        const localAddr = parts[1];
-        if (localAddr.endsWith(`:${port}`)) {
-          return parts[4];
-        }
-      }
-    }
-  } catch (e) {
-    // port not found
-  }
-  return null;
-}
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid, killPid } = require('./paths');
 
 function killPidFile(pidPath, label) {
   if (!fs.existsSync(pidPath)) return false;
@@ -31,15 +11,13 @@ function killPidFile(pidPath, label) {
     fs.unlinkSync(pidPath);
     return false;
   }
-  try {
-    execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8' });
+  if (killPid(pid)) {
     console.log(`✅ 已关闭${label} (PID: ${pid})`);
     fs.unlinkSync(pidPath);
     return true;
-  } catch (e) {
-    fs.unlinkSync(pidPath);
-    return false;
   }
+  fs.unlinkSync(pidPath);
+  return false;
 }
 
 function stopByConfig() {
@@ -60,11 +38,10 @@ function stopByConfig() {
     const port = rule.listen;
     const pid = getPortPid(port);
     if (pid && !killedPids.has(pid)) {
-      try {
-        execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8' });
+      if (killPid(pid)) {
         console.log(`✅ 已关闭端口 ${port} (PID: ${pid})`);
         killedPids.add(pid);
-      } catch (e) {
+      } else {
         console.error(`❌ 关闭端口 ${port} (PID: ${pid}) 失败`);
       }
     } else if (!pid) {
