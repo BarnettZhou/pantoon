@@ -6,12 +6,12 @@
 
 ## 功能特性
 
-- **零依赖**：仅使用 Node.js 内置模块，无需 `npm install`
 - **批量转发**：一个配置文件管理任意多条转发规则
+- **Web 控制台**：浏览器访问即可查看状态、增删规则、一键重启
 - **内容替换**：自动替换 HTML/JS/CSS 中的绝对路径域名，避免浏览器直连外网
 - **外部域名发现**：自动扫描页面引用的跨域资源并补全转发规则
 - **PID 文件管理**：启停不依赖配置文件内容，删改规则后仍能精准关闭进程
-- **跨平台**：Windows、macOS、Linux 均支持
+- **跨平台**：Windows、macOS、 Linux 均支持
 
 ---
 
@@ -58,6 +58,8 @@ http://192.168.1.100:18080
 | 命令 | 说明 | 示例 |
 |------|------|------|
 | `start` | 启动代理（前台运行） | `./pantoon start` |
+| `start -s` | 同时启动代理 + Web 控制台 | `./pantoon start -s` |
+| `server` | 单独启动 Web 控制台 | `./pantoon server` |
 | `stop` | 关闭代理 | `./pantoon stop` |
 | `restart` | 重启代理 | `./pantoon restart` |
 | `status` | 查看当前转发状态 | `./pantoon status` |
@@ -73,8 +75,8 @@ http://192.168.1.100:18080
 
 配置文件位于系统标准目录：
 
-- **Windows**：`%USERPROFILE%\.pantoon\config.json`
-- **macOS / Linux**：`~/.pantoon/config.json`
+- **Windows**：`%USERPROFILE%\.pantoon\config.yaml`
+- **macOS / Linux**：`~/.pantoon/config.yaml`
 
 初始配置示例：
 
@@ -112,6 +114,34 @@ http%3A%2F%2Ftarget-site.com   →   http%3A%2F%2F192.168.1.100:18080
 
 ---
 
+## Web 控制台
+
+启动 Web 控制台后，通过浏览器即可查看状态、增删规则、一键重启代理：
+
+```bash
+# 单独启动控制台
+./pantoon server
+
+# 启动代理时同时启动控制台
+./pantoon start -s
+```
+
+打开浏览器访问：
+
+```
+http://<跳板机IP>:11451/console
+```
+
+控制台功能：
+- 表格展示所有转发规则的端口、目标地址、运行状态
+- 新增规则（输入端口 + 目标地址）
+- 删除规则
+- 一键重启代理
+
+> 控制台与代理进程相互独立，可以单独启动、单独关闭。
+
+---
+
 ## 外部域名发现
 
 如果目标页面引用了其他域名的资源（CDN、第三方 API 等），这些请求会绕过跳板。使用 scan 命令自动发现并补全：
@@ -120,7 +150,7 @@ http%3A%2F%2Ftarget-site.com   →   http%3A%2F%2F192.168.1.100:18080
 ./pantoon scan
 ```
 
-扫描后自动追加到 `config.json`，执行 `./pantoon restart` 生效。
+扫描后自动追加到 `config.yaml`，执行 `./pantoon restart` 生效。
 
 > 提示：scan 会把所有引用域名都加进来（包括广告、统计脚本），建议检查后手动清理不需要的规则。
 
@@ -150,6 +180,7 @@ pantoon/
 └── core/
     ├── paths.js      # 路径配置（跨平台标准目录）
     ├── proxy.js      # 代理服务
+    ├── server.js     # Web 控制台
     ├── discover.js   # 扫描外部域名
     ├── add.js        # 添加规则
     ├── remove.js     # 删除规则

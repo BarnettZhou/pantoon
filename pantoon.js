@@ -42,8 +42,15 @@ switch (cmd) {
       console.log('\n代理已在运行，如需重启请执行: pantoon restart\n');
       process.exit(1);
     }
-    console.log('\n🚀 启动代理...\n');
-    run('proxy.js', true);
+    const withServer = process.argv.includes('-s') || process.argv.includes('--server');
+    if (withServer) {
+      console.log('\n🚀 启动代理 + 控制台...\n');
+      run('server.js', false); // 后台启动控制台
+      run('proxy.js', true);   // 前台启动代理
+    } else {
+      console.log('\n🚀 启动代理...\n');
+      run('proxy.js', true);
+    }
     break;
   }
   case 'stop': {
@@ -74,6 +81,10 @@ switch (cmd) {
     run('remove.js', true, process.argv.slice(3));
     break;
   }
+  case 'server': {
+    run('server.js', true);
+    break;
+  }
   default: {
     console.log(`
 用法: pantoon <命令>
@@ -86,9 +97,12 @@ switch (cmd) {
   scan     扫描外部域名并自动补全配置
   add      手动添加转发规则
   remove   删除转发规则
+  server   启动 Web 控制台（前台运行）
 
 示例:
   pantoon start
+  pantoon start -s              同时启动代理 + Web 控制台
+  pantoon server
   pantoon scan
   pantoon restart
   pantoon add --listen 18094 --target https://api.example.com
