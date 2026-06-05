@@ -69,7 +69,7 @@ const HTML_PAGE = `<!DOCTYPE html>
         <tr><th style="width:40px"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th><th>端口</th><th>目标地址</th><th>状态</th><th>操作</th></tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="4" class="empty">加载中...</td></tr>
+        <tr><td colspan="5" class="empty">加载中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -108,7 +108,7 @@ async function loadData() {
     const data = await res.json();
     const tbody = document.getElementById('tbody');
     if (!data.rules || data.rules.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty">暂无规则</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无规则</td></tr>';
       return;
     }
     tbody.innerHTML = data.rules.map(r => {
@@ -119,7 +119,10 @@ async function loadData() {
         <td>\${r.listen}</td>
         <td><span class="target-text" title="\${r.target}">\${r.target}</span></td>
         <td class="\${statusClass}">\${statusText}</td>
-        <td><button class="btn btn-danger" onclick="doRemove(\${r.listen})">删除</button></td>
+        <td>
+          <button class="btn btn-primary" onclick="openRule(\${r.listen})">打开</button>
+          <button class="btn btn-danger" onclick="doRemove(\${r.listen})">删除</button>
+        </td>
       </tr>\`;
     }).join('');
     document.getElementById('checkAll').checked = false;
@@ -206,6 +209,10 @@ async function doBatchDelete() {
   } catch (e) {
     toast('删除失败: ' + e.message, false);
   }
+}
+function openRule(port) {
+  const host = window.location.hostname;
+  window.open('http://' + host + ':' + port, '_blank');
 }
 function showAdd() { document.getElementById('modal').classList.add('show'); document.getElementById('inputPort').focus(); }
 function hideAdd() { document.getElementById('modal').classList.remove('show'); document.getElementById('inputPort').value = ''; document.getElementById('inputTarget').value = ''; }
