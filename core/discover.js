@@ -5,7 +5,7 @@ const path = require('path');
 const { URL } = require('url');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH } = require('./paths');
+const { CONFIG_PATH, ensureConfig } = require('./paths');
 
 function fetch(urlStr) {
   return new Promise((resolve, reject) => {
@@ -80,10 +80,7 @@ function extractDomains(html, baseHost) {
 }
 
 async function main() {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('config.yaml 不存在');
-    process.exit(1);
-  }
+  ensureConfig();
 
   let config;
   try {

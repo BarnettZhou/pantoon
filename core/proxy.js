@@ -7,7 +7,7 @@ const { URL } = require('url');
 const zlib = require('zlib');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH } = require('./paths');
+const { CONFIG_PATH, PID_PATH, ensureConfig } = require('./paths');
 
 function getLocalIPs() {
   const interfaces = os.networkInterfaces();
@@ -180,10 +180,7 @@ function startProxy(listenPort, targetUrlStr, allTargetUrls) {
 }
 
 function main() {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('未找到 config.yaml，请先创建配置文件');
-    process.exit(1);
-  }
+  ensureConfig();
 
   let config;
   try {

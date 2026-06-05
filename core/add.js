@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { URL } = require('url');
 const yaml = require('js-yaml');
-const { CONFIG_PATH } = require('./paths');
+const { CONFIG_PATH, ensureConfig } = require('./paths');
 
 function getArg(flag) {
   const idx = process.argv.indexOf(flag);
@@ -45,6 +45,8 @@ function main() {
     console.error(`❌ 无效目标地址: ${target} (${e.message})`);
     process.exit(1);
   }
+
+  ensureConfig();
 
   let config;
   try {

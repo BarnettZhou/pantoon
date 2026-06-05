@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 const yaml = require('js-yaml');
-const { CONFIG_PATH, SERVER_PID_PATH } = require('./paths');
+const { CONFIG_PATH, SERVER_PID_PATH, ensureConfig } = require('./paths');
 
 const PORT = 11451;
 
@@ -232,6 +232,7 @@ function isPortListening(port) {
 }
 
 function readConfig() {
+  ensureConfig();
   return yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
 }
 

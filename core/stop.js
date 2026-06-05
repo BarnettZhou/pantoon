@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH } = require('./paths');
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig } = require('./paths');
 
 function getPortPid(port) {
   try {
@@ -43,10 +43,7 @@ function killPidFile(pidPath, label) {
 }
 
 function stopByConfig() {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('config.yaml 不存在');
-    process.exit(1);
-  }
+  ensureConfig();
 
   let config;
   try {

@@ -9,9 +9,9 @@ const { CONFIG_PATH } = require('./core/paths');
 function run(script, sync = false, args = []) {
   const scriptPath = path.join(__dirname, 'core', script);
   if (sync) {
-    return spawnSync('node', [scriptPath, ...args], { stdio: 'inherit', shell: true });
+    return spawnSync('node', [scriptPath, ...args], { stdio: 'inherit' });
   } else {
-    return spawn('node', [scriptPath, ...args], { stdio: 'ignore', shell: true, windowsHide: true });
+    return spawn('node', [scriptPath, ...args], { stdio: 'ignore', windowsHide: true });
   }
 }
 
