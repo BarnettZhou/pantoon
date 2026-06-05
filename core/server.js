@@ -20,7 +20,8 @@ const HTML_PAGE = `<!DOCTYPE html>
   h1 { font-size: 28px; margin: 0 0 8px; color: #1f1f1f; }
   .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
   .card { background: #fff; border-radius: 8px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); margin-bottom: 20px; }
-  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .batch-info { margin-left: auto; font-size: 13px; color: #666; }
   .btn { padding: 8px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: opacity 0.15s; }
   .btn:hover { opacity: 0.85; }
   .btn-primary { background: #1677ff; color: #fff; }
@@ -58,12 +59,14 @@ const HTML_PAGE = `<!DOCTYPE html>
   <div class="card">
     <div class="toolbar">
       <button class="btn btn-primary" onclick="showAdd()">+ 新增规则</button>
+      <button class="btn btn-danger" id="batchBtn" onclick="doBatchDelete()" style="display:none">批量删除</button>
       <button class="btn btn-success" onclick="doRestart()">🔄 重启代理</button>
       <button class="btn btn-default" onclick="loadData()">↻ 刷新</button>
+      <span class="batch-info" id="batchInfo"></span>
     </div>
     <table>
       <thead>
-        <tr><th>端口</th><th>目标地址</th><th>状态</th><th>操作</th></tr>
+        <tr><th style="width:40px"><input type="checkbox" id="checkAll" onclick="toggleAll()"></th><th>端口</th><th>目标地址</th><th>状态</th><th>操作</th></tr>
       </thead>
       <tbody id="tbody">
         <tr><td colspan="4" class="empty">加载中...</td></tr>
@@ -112,12 +115,15 @@ async function loadData() {
       const statusClass = r.running ? 'status-running' : 'status-stopped';
       const statusText = r.running ? '运行中' : '未运行';
       return \`<tr>
+        <td><input type="checkbox" class="row-check" value="\${r.listen}" onchange="updateBatchUI()"></td>
         <td>\${r.listen}</td>
         <td><span class="target-text" title="\${r.target}">\${r.target}</span></td>
         <td class="\${statusClass}">\${statusText}</td>
         <td><button class="btn btn-danger" onclick="doRemove(\${r.listen})">删除</button></td>
       </tr>\`;
     }).join('');
+    document.getElementById('checkAll').checked = false;
+    updateBatchUI();
   } catch (e) {
     toast('加载失败: ' + e.message, false);
   }
@@ -161,6 +167,44 @@ async function doRestart() {
     setTimeout(loadData, 2000);
   } catch (e) {
     toast('重启失败: ' + e.message, false);
+  }
+}
+function toggleAll() {
+  const checked = document.getElementById('checkAll').checked;
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = checked);
+  updateBatchUI();
+}
+function getSelected() {
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(cb => parseInt(cb.value, 10));
+}
+function updateBatchUI() {
+  const selected = getSelected();
+  const btn = document.getElementById('batchBtn');
+  const info = document.getElementById('batchInfo');
+  if (selected.length > 0) {
+    btn.style.display = 'inline-block';
+    info.textContent = '已选 ' + selected.length + ' 项';
+  } else {
+    btn.style.display = 'none';
+    info.textContent = '';
+  }
+}
+async function doBatchDelete() {
+  const ports = getSelected();
+  if (ports.length === 0) return;
+  if (!confirm('确认删除选中的 ' + ports.length + ' 条规则？')) return;
+  try {
+    const res = await fetch('/api/rules/batch-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ports })
+    });
+    const data = await res.json();
+    if (!data.success) { toast(data.error || '删除失败', false); return; }
+    toast('已删除 ' + ports.length + ' 条规则', true);
+    loadData();
+  } catch (e) {
+    toast('删除失败: ' + e.message, false);
   }
 }
 function showAdd() { document.getElementById('modal').classList.add('show'); document.getElementById('inputPort').focus(); }
@@ -273,6 +317,31 @@ function handleRequest(req, res) {
         writeConfig(config);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // API: 批量删除规则
+  if (url.pathname === '/api/rules/batch-delete' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const ports = (data.ports || []).map(p => parseInt(p, 10));
+        if (ports.length === 0) throw new Error('未选择任何端口');
+        const config = readConfig();
+        const rules = config.rules || [];
+        const before = rules.length;
+        config.rules = rules.filter(r => !ports.includes(r.listen));
+        const removed = before - config.rules.length;
+        writeConfig(config);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, removed }));
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: e.message }));
