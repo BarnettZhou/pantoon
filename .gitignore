@@ -1,0 +1,20 @@
+# Logs
+*.log
+
+# Runtime files
+.pantoon.pid
+
+# User configuration (generated at runtime)
+config.json
+config.json.backup.*
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
