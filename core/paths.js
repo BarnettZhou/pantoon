@@ -18,5 +18,6 @@ function getConfigDir() {
 
 const CONFIG_PATH = path.join(getConfigDir(), 'config.yaml');
 const PID_PATH = path.join(getConfigDir(), '.pantoon.pid');
+const SERVER_PID_PATH = path.join(getConfigDir(), '.pantoon-server.pid');
 
-module.exports = { getConfigDir, CONFIG_PATH, PID_PATH };
+module.exports = { getConfigDir, CONFIG_PATH, PID_PATH, SERVER_PID_PATH };

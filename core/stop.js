@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH } = require('./paths');
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH } = require('./paths');
 
 function getPortPid(port) {
   try {
@@ -24,21 +24,20 @@ function getPortPid(port) {
   return null;
 }
 
-function stopByPidFile() {
-  if (!fs.existsSync(PID_PATH)) return false;
-  const pid = fs.readFileSync(PID_PATH, 'utf8').trim();
+function killPidFile(pidPath, label) {
+  if (!fs.existsSync(pidPath)) return false;
+  const pid = fs.readFileSync(pidPath, 'utf8').trim();
   if (!pid) {
-    fs.unlinkSync(PID_PATH);
+    fs.unlinkSync(pidPath);
     return false;
   }
   try {
     execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8' });
-    console.log(`✅ 已关闭代理进程 (PID: ${pid})`);
-    fs.unlinkSync(PID_PATH);
+    console.log(`✅ 已关闭${label} (PID: ${pid})`);
+    fs.unlinkSync(pidPath);
     return true;
   } catch (e) {
-    console.error(`通过 PID 文件关闭失败，尝试按端口扫描...`);
-    fs.unlinkSync(PID_PATH);
+    fs.unlinkSync(pidPath);
     return false;
   }
 }
@@ -80,15 +79,23 @@ function stopByConfig() {
 }
 
 function main() {
-  console.log('\n正在关闭转发...\n');
+  console.log('\n正在关闭服务...\n');
 
-  // 优先通过 PID 文件关闭，不依赖 config.yaml 内容
-  if (stopByPidFile()) {
-    console.log('\n完成\n');
+  let stopped = 0;
+
+  // 关闭代理进程
+  if (killPidFile(PID_PATH, '代理进程')) stopped++;
+
+  // 关闭控制台进程
+  if (killPidFile(SERVER_PID_PATH, '控制台进程')) stopped++;
+
+  if (stopped > 0) {
+    console.log(`\n完成，共关闭 ${stopped} 个进程\n`);
     return;
   }
 
   // 兜底：按 config.yaml 中的端口扫描
+  console.log('未找到 PID 文件，尝试按端口扫描...\n');
   const count = stopByConfig();
   console.log(`\n完成，共关闭 ${count} 个进程\n`);
 }

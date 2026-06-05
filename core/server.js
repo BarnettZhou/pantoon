@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 const yaml = require('js-yaml');
-const { CONFIG_PATH } = require('./paths');
+const { CONFIG_PATH, SERVER_PID_PATH } = require('./paths');
 
 const PORT = 11451;
 
@@ -402,6 +402,7 @@ function handleRequest(req, res) {
 
 const server = http.createServer(handleRequest);
 server.listen(PORT, '0.0.0.0', () => {
+  fs.writeFileSync(SERVER_PID_PATH, process.pid.toString());
   console.log(`\n🖥️  控制台已启动`);
   console.log(`   Web 界面: http://localhost:${PORT}/console`);
   console.log(`   API 状态: http://localhost:${PORT}/status\n`);
