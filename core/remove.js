@@ -1,4 +1,5 @@
 const fs = require('fs');
+const yaml = require('js-yaml');
 const { CONFIG_PATH } = require('./paths');
 
 function getArg(flag) {
@@ -34,28 +35,28 @@ function main() {
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 读取失败:', e.message);
+    console.error('config.yaml 读取失败:', e.message);
     process.exit(1);
   }
 
-  const proxies = config.proxies || [];
+  const proxies = config.rules || [];
   const beforeLen = proxies.length;
   const removed = proxies.filter(r => r.listen === port || r.port === port);
-  config.proxies = proxies.filter(r => r.listen !== port && r.port !== port);
+  config.rules = proxies.filter(r => r.listen !== port && r.port !== port);
 
-  if (config.proxies.length === beforeLen) {
+  if (config.rules.length === beforeLen) {
     console.error(`❌ 未找到端口 ${port} 对应的规则`);
     process.exit(1);
   }
 
   try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+    fs.writeFileSync(CONFIG_PATH, yaml.dump(config, { indent: 2, lineWidth: -1 }));
     console.log(`\n✅ 已删除规则: [${port}] -> ${removed[0].target}\n`);
     console.log('执行 pantoon restart 以生效\n');
   } catch (e) {
-    console.error('config.json 写入失败:', e.message);
+    console.error('config.yaml 写入失败:', e.message);
     process.exit(1);
   }
 }

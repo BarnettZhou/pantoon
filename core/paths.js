@@ -6,7 +6,7 @@ function getConfigDir() {
   const platform = os.platform();
   let dir;
   if (platform === 'win32') {
-    dir = path.join(process.env.USERPROFILE, 'AppData', '.pantoon');
+    dir = path.join(process.env.USERPROFILE, '.pantoon');
   } else {
     dir = path.join(process.env.HOME, '.pantoon');
   }
@@ -16,7 +16,7 @@ function getConfigDir() {
   return dir;
 }
 
-const CONFIG_PATH = path.join(getConfigDir(), 'config.json');
+const CONFIG_PATH = path.join(getConfigDir(), 'config.yaml');
 const PID_PATH = path.join(getConfigDir(), '.pantoon.pid');
 
 module.exports = { getConfigDir, CONFIG_PATH, PID_PATH };

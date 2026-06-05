@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const yaml = require('js-yaml');
 
 const { CONFIG_PATH } = require('./paths');
 
@@ -80,19 +81,19 @@ function extractDomains(html, baseHost) {
 
 async function main() {
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('config.json 不存在');
+    console.error('config.yaml 不存在');
     process.exit(1);
   }
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 解析失败:', e.message);
+    console.error('config.yaml 解析失败:', e.message);
     process.exit(1);
   }
 
-  let proxies = config.proxies || [];
+  let proxies = config.rules || [];
   if (proxies.length === 0) {
     console.log('配置文件中未找到任何代理规则');
     return;
@@ -145,10 +146,17 @@ async function main() {
     let nextPort = 18080;
     while (usedPorts.has(nextPort)) nextPort++;
 
-    console.log(`📝 发现 ${unknownList.length} 个未配置的外部域名，自动追加到 config.json:`);
+    console.log(`📝 发现 ${unknownList.length} 个未配置的外部域名，自动追加到 config.yaml:`);
     unknownList.forEach(d => {
+      // 防御：如果该域名在本次扫描前已被其他规则添加，则跳过
+      const alreadyExists = proxies.some(r => {
+        try { return new URL(r.target || r.host).host === d; } catch (e) { return false; }
+      });
+      if (alreadyExists) return;
+
       while (usedPorts.has(nextPort)) nextPort++;
-      proxies.push({ listen: nextPort, target: `https://${d}` });
+      const name = d.replace(/\./g, '-');
+      proxies.push({ name, listen: nextPort, target: `https://${d}` });
       usedPorts.add(nextPort);
       console.log(`   + [${nextPort}] -> https://${d}`);
       nextPort++;
@@ -156,14 +164,14 @@ async function main() {
 
     // 备份旧配置
     const backupPath = CONFIG_PATH + '.backup.' + Date.now();
-    fs.writeFileSync(backupPath, JSON.stringify(config, null, 2));
+    fs.writeFileSync(backupPath, yaml.dump(config, { indent: 2, lineWidth: -1 }));
 
-    config.proxies = proxies;
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+    config.rules = proxies;
+    fs.writeFileSync(CONFIG_PATH, yaml.dump(config, { indent: 2, lineWidth: -1 }));
 
-    console.log(`\n✅ 已自动写入 config.json（旧配置备份: ${path.basename(backupPath)}）`);
+    console.log(`\n✅ 已自动写入 config.yaml（旧配置备份: ${path.basename(backupPath)}）`);
     console.log('请执行以下命令重启代理:\n');
-    console.log('   node stop.js && node proxy.js\n');
+    console.log('   pantoon restart\n');
   } else {
     console.log('✅ 所有外部域名均已配置，无需补充\n');
   }

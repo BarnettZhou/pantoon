@@ -73,28 +73,24 @@ http://192.168.1.100:18080
 
 配置文件位于系统标准目录：
 
-- **Windows**：`%USERPROFILE%\AppData\.pantoon\config.json`
+- **Windows**：`%USERPROFILE%\.pantoon\config.json`
 - **macOS / Linux**：`~/.pantoon/config.json`
 
 初始配置示例：
 
-```json
-{
-  "proxies": [
-    {
-      "listen": 18080,
-      "target": "https://redm.topcj.com"
-    },
-    {
-      "listen": 18081,
-      "target": "http://10.1.0.238:8000"
-    }
-  ]
-}
+```yaml
+rules:
+  - name: example
+    listen: 18080
+    target: https://example.com
+  - name: internal-api
+    listen: 18081
+    target: http://10.0.0.1:8080
 ```
 
 | 字段 | 说明 |
 |------|------|
+| `name` | 规则名称（建议用目标域名的 host） |
 | `listen` | 本机监听的端口 |
 | `target` | 要转发的目标地址，支持 `http://` 和 `https://` |
 
@@ -105,13 +101,13 @@ http://192.168.1.100:18080
 对于文本类型的响应（HTML/JS/CSS/JSON/XML），pantoon 会自动替换页面内的目标域名：
 
 ```
-https://redm.topcj.com/xxx   →   http://192.168.1.100:18080/xxx
+https://target-site.com/xxx   →   http://192.168.1.100:18080/xxx
 ```
 
 包括 URL 编码形式：
 
 ```
-http%3A%2F%2Fredm.topcj.com   →   http%3A%2F%2F192.168.1.100:18080
+http%3A%2F%2Ftarget-site.com   →   http%3A%2F%2F192.168.1.100:18080
 ```
 
 ---

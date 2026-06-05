@@ -1,0 +1,24 @@
+{
+  "name": "proxy-redm",
+  "version": "1.0.0",
+  "description": "一个零依赖的 Node.js 批量端口转发工具（跳板代理），用于将多个目标站点的流量统一转发到本地端口，供局域网内其他设备访问。",
+  "main": "pantoon.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BarnettZhou/pantoon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BarnettZhou/pantoon/issues"
+  },
+  "homepage": "https://github.com/BarnettZhou/pantoon#readme",
+  "dependencies": {
+    "js-yaml": "^4.2.0"
+  }
+}

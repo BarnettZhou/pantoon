@@ -2,6 +2,7 @@
 const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
 
 const { CONFIG_PATH } = require('./core/paths');
 
@@ -17,8 +18,8 @@ function run(script, sync = false, args = []) {
 function isRunning() {
   if (!fs.existsSync(CONFIG_PATH)) return false;
   try {
-    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-    const proxies = config.proxies || [];
+    const config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const proxies = config.rules || [];
     for (const rule of proxies) {
       const port = rule.listen || rule.port;
       try {

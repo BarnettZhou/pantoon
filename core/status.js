@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const yaml = require('js-yaml');
 
 const { CONFIG_PATH } = require('./paths');
 
@@ -25,19 +26,19 @@ function getPortPid(port) {
 
 function main() {
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('config.json 不存在');
+    console.error('config.yaml 不存在');
     process.exit(1);
   }
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 解析失败:', e.message);
+    console.error('config.yaml 解析失败:', e.message);
     process.exit(1);
   }
 
-  const proxies = config.proxies || [];
+  const proxies = config.rules || [];
 
   console.log('\n当前端口转发情况\n');
   console.log('端口      目标地址                       状态      PID');

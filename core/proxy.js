@@ -5,6 +5,8 @@ const path = require('path');
 const os = require('os');
 const { URL } = require('url');
 const zlib = require('zlib');
+const { execSync } = require('child_process');
+const yaml = require('js-yaml');
 
 const { CONFIG_PATH, PID_PATH } = require('./paths');
 
@@ -180,19 +182,19 @@ function startProxy(listenPort, targetUrlStr, allTargetUrls) {
 
 function main() {
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('未找到 config.json，请先创建配置文件');
+    console.error('未找到 config.yaml，请先创建配置文件');
     process.exit(1);
   }
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 解析失败:', e.message);
+    console.error('config.yaml 解析失败:', e.message);
     process.exit(1);
   }
 
-  const proxies = config.proxies || [];
+  const proxies = config.rules || [];
   if (proxies.length === 0) {
     console.log('配置文件中未找到任何代理规则');
     return;
@@ -221,6 +223,69 @@ function main() {
 
   // 写入 PID 文件，方便 stop.js 准确关闭（不依赖 config.json 内容）
   fs.writeFileSync(PID_PATH, process.pid.toString());
+
+  // 启动状态 API 服务
+  startApiServer(process.pid);
+}
+
+function startApiServer(pid) {
+  const API_PORT = 11451;
+
+  const server = http.createServer((req, res) => {
+    if (req.url === '/status' && req.method === 'GET') {
+      let config;
+      try {
+        config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Failed to read config: ' + e.message }));
+        return;
+      }
+
+      const proxies = config.rules || [];
+      const proxyList = proxies.map(rule => {
+        const port = rule.listen || rule.port;
+        let running = false;
+        try {
+          const out = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+          if (out.includes('LISTENING')) running = true;
+        } catch (e) {}
+        return {
+          listen: port,
+          target: rule.target || rule.host,
+          running
+        };
+      });
+
+      const result = {
+        status: 'running',
+        pid: pid,
+        proxies: proxyList
+      };
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify(result, null, 2));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not Found' }));
+    }
+  });
+
+  server.listen(API_PORT, '0.0.0.0', () => {
+    console.log(`📡 API 服务已启动: http://0.0.0.0:${API_PORT}/status`);
+    console.log();
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ API 端口 ${API_PORT} 已被占用`);
+    } else {
+      console.error(`❌ API 服务器错误:`, err.message);
+    }
+  });
 }
 
 main();

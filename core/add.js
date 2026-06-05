@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { URL } = require('url');
+const yaml = require('js-yaml');
 const { CONFIG_PATH } = require('./paths');
 
 function getArg(flag) {
@@ -47,13 +48,13 @@ function main() {
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 读取失败:', e.message);
+    console.error('config.yaml 读取失败:', e.message);
     process.exit(1);
   }
 
-  const proxies = config.proxies || [];
+  const proxies = config.rules || [];
 
   const conflict = proxies.find(r => r.listen === port || r.port === port);
   if (conflict) {
@@ -61,15 +62,17 @@ function main() {
     process.exit(1);
   }
 
-  proxies.push({ listen: port, target });
-  config.proxies = proxies;
+  let name;
+  try { name = new URL(target).host.replace(/\./g, '-'); } catch (e) { name = 'rule-' + (proxies.length + 1); }
+  proxies.push({ name, listen: port, target });
+  config.rules = proxies;
 
   try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+    fs.writeFileSync(CONFIG_PATH, yaml.dump(config, { indent: 2, lineWidth: -1 }));
     console.log(`\n✅ 已添加规则: [${port}] -> ${target}\n`);
     console.log('执行 pantoon restart 以生效\n');
   } catch (e) {
-    console.error('config.json 写入失败:', e.message);
+    console.error('config.yaml 写入失败:', e.message);
     process.exit(1);
   }
 }

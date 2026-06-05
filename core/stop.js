@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const yaml = require('js-yaml');
 
 const { CONFIG_PATH, PID_PATH } = require('./paths');
 
@@ -44,19 +45,19 @@ function stopByPidFile() {
 
 function stopByConfig() {
   if (!fs.existsSync(CONFIG_PATH)) {
-    console.error('config.json 不存在');
+    console.error('config.yaml 不存在');
     process.exit(1);
   }
 
   let config;
   try {
-    config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch (e) {
-    console.error('config.json 解析失败:', e.message);
+    console.error('config.yaml 解析失败:', e.message);
     process.exit(1);
   }
 
-  const proxies = config.proxies || [];
+  const proxies = config.rules || [];
   const killedPids = new Set();
 
   proxies.forEach(rule => {
@@ -81,13 +82,13 @@ function stopByConfig() {
 function main() {
   console.log('\n正在关闭转发...\n');
 
-  // 优先通过 PID 文件关闭，不依赖 config.json 内容
+  // 优先通过 PID 文件关闭，不依赖 config.yaml 内容
   if (stopByPidFile()) {
     console.log('\n完成\n');
     return;
   }
 
-  // 兜底：按 config.json 中的端口扫描
+  // 兜底：按 config.yaml 中的端口扫描
   const count = stopByConfig();
   console.log(`\n完成，共关闭 ${count} 个进程\n`);
 }
