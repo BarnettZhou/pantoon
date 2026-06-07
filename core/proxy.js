@@ -7,7 +7,7 @@ const { URL } = require('url');
 const zlib = require('zlib');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH, ensureConfig } = require('./paths');
+const { CONFIG_PATH, PID_PATH, ensureConfig, isIPInWhitelist } = require('./paths');
 
 function getLocalIPs() {
   const interfaces = os.networkInterfaces();
@@ -54,7 +54,7 @@ function compress(buffer, encoding) {
   });
 }
 
-function startProxy(listenPort, targetUrlStr, allTargetUrls) {
+function startProxy(listenPort, targetUrlStr, allTargetUrls, ipWhitelist) {
   let parsed;
   try {
     parsed = new URL(targetUrlStr);
@@ -75,6 +75,13 @@ function startProxy(listenPort, targetUrlStr, allTargetUrls) {
   });
 
   const server = http.createServer((req, res) => {
+    const clientIP = req.socket.remoteAddress;
+    if (!isIPInWhitelist(clientIP, ipWhitelist)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Forbidden: IP not in whitelist');
+      return;
+    }
+
     const clientHost = req.headers.host || `localhost:${listenPort}`;
 
     const options = {
@@ -211,6 +218,7 @@ function main() {
   }
 
   const allTargetUrls = proxies.map(r => r.target || r.host).filter(Boolean);
+  const ipWhitelist = config['ip-whitelist'] || [];
 
   proxies.forEach((rule, index) => {
     const listenPort = rule.listen || rule.port;
@@ -219,7 +227,7 @@ function main() {
       console.warn(`⚠️ 跳过无效规则 #${index + 1}:`, JSON.stringify(rule));
       return;
     }
-    startProxy(listenPort, target, allTargetUrls);
+    startProxy(listenPort, target, allTargetUrls, ipWhitelist);
   });
 
   // 写入 PID 文件，方便 stop.js 准确关闭（不依赖 config.json 内容）

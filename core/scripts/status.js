@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid } = require('./paths');
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid } = require('../paths');
 
 function isProcessAlive(pidPath) {
   if (!fs.existsSync(pidPath)) return false;
@@ -56,6 +56,15 @@ function main() {
   });
 
   console.log(`\n总计: ${proxies.length} 条规则, ${runningCount} 个运行中\n`);
+
+  const whitelist = config['ip-whitelist'] || [];
+  if (whitelist.length > 0) {
+    console.log('IP 白名单:');
+    whitelist.forEach(ip => console.log(`   ${ip}`));
+    console.log();
+  } else {
+    console.log('IP 白名单: 未配置（拒绝所有访问）\n');
+  }
 }
 
 main();

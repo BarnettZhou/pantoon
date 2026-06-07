@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid, killPid } = require('./paths');
+const { CONFIG_PATH, PID_PATH, SERVER_PID_PATH, ensureConfig, getPortPid, killPid } = require('../paths');
 
 function killPidFile(pidPath, label) {
   if (!fs.existsSync(pidPath)) return false;

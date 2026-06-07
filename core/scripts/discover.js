@@ -5,7 +5,7 @@ const path = require('path');
 const { URL } = require('url');
 const yaml = require('js-yaml');
 
-const { CONFIG_PATH, ensureConfig } = require('./paths');
+const { CONFIG_PATH, ensureConfig } = require('../paths');
 
 function fetch(urlStr) {
   return new Promise((resolve, reject) => {

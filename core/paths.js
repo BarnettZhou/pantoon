@@ -43,7 +43,7 @@ function isWindows() {
 function getPortPid(port) {
   try {
     if (isWindows()) {
-      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', windowsHide: true });
       const lines = output.trim().split('\n');
       for (const line of lines) {
         const parts = line.trim().split(/\s+/);
@@ -66,7 +66,7 @@ function getPortPid(port) {
 function isPortListening(port) {
   try {
     if (isWindows()) {
-      const out = spawnSync('cmd', ['/c', `netstat -ano | findstr :${port}`], { encoding: 'utf8', shell: true }).stdout;
+      const out = spawnSync('cmd', ['/c', `netstat -ano | findstr :${port}`], { encoding: 'utf8', shell: true, windowsHide: true }).stdout;
       return out && out.includes('LISTENING');
     } else {
       const result = spawnSync('lsof', ['-i', `:${port}`, '-sTCP:LISTEN'], { encoding: 'utf8' });
@@ -80,7 +80,7 @@ function isPortListening(port) {
 function killPid(pid) {
   try {
     if (isWindows()) {
-      execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8' });
+      execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8', windowsHide: true });
     } else {
       execSync(`kill -9 ${pid}`, { encoding: 'utf8' });
     }
@@ -103,7 +103,49 @@ function getLocalIPs() {
   return ips;
 }
 
+function normalizeIP(ip) {
+  if (!ip) return '';
+  // IPv6-mapped IPv4, e.g. ::ffff:10.0.0.1
+  if (ip.startsWith('::ffff:')) {
+    return ip.slice(7);
+  }
+  return ip;
+}
+
+function ipToLong(ip) {
+  const parts = ip.split('.');
+  return ((parseInt(parts[0], 10) << 24) >>> 0) +
+         ((parseInt(parts[1], 10) << 16) >>> 0) +
+         ((parseInt(parts[2], 10) << 8) >>> 0) +
+         (parseInt(parts[3], 10) >>> 0);
+}
+
+function matchCIDR(ip, cidr) {
+  const [network, prefixStr] = cidr.split('/');
+  const prefix = parseInt(prefixStr, 10);
+  const mask = 0xFFFFFFFF << (32 - prefix);
+  const ipLong = ipToLong(ip);
+  const netLong = ipToLong(network);
+  return (ipLong & mask) === (netLong & mask);
+}
+
+function isIPInWhitelist(ip, whitelist) {
+  const normalized = normalizeIP(ip);
+  // 默认放行本地回环地址
+  if (normalized === '127.0.0.1' || ip === '::1') return true;
+  if (!whitelist || whitelist.length === 0) return false;
+  for (const entry of whitelist) {
+    if (entry.includes('/')) {
+      if (matchCIDR(normalized, entry)) return true;
+    } else if (normalized === entry) {
+      return true;
+    }
+  }
+  return false;
+}
+
 module.exports = {
   getGlobalConfigDir, getConfigPath, CONFIG_PATH, PID_PATH, SERVER_PID_PATH,
-  ensureConfig, isWindows, getPortPid, isPortListening, killPid, getLocalIPs
+  ensureConfig, isWindows, getPortPid, isPortListening, killPid, getLocalIPs,
+  normalizeIP, isIPInWhitelist
 };
