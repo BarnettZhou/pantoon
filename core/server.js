@@ -58,6 +58,20 @@ function handleRequest(req, res) {
     return;
   }
 
+  // icon
+  if (url.pathname === '/icon.svg' && req.method === 'GET') {
+    try {
+      const iconPath = path.join(__dirname, 'pages', 'icon.svg');
+      const svg = fs.readFileSync(iconPath, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+      res.end(svg);
+    } catch (e) {
+      res.writeHead(404);
+      res.end();
+    }
+    return;
+  }
+
   // HTML 控制台
   if (url.pathname === '/console' && req.method === 'GET') {
     try {
