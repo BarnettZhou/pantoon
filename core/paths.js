@@ -43,7 +43,7 @@ function isWindows() {
 function getPortPid(port) {
   try {
     if (isWindows()) {
-      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', windowsHide: true });
+      const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', windowsHide: true, stdio: 'pipe' });
       const lines = output.trim().split('\n');
       for (const line of lines) {
         const parts = line.trim().split(/\s+/);
@@ -80,7 +80,7 @@ function isPortListening(port) {
 function killPid(pid) {
   try {
     if (isWindows()) {
-      execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8', windowsHide: true });
+      execSync(`taskkill /F /PID ${pid}`, { encoding: 'utf8', windowsHide: true, stdio: 'pipe' });
     } else {
       execSync(`kill -9 ${pid}`, { encoding: 'utf8' });
     }
